@@ -1,5 +1,4 @@
 package src;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -23,7 +22,7 @@ public class ClientServer
       try (Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD)) {
         System.out.println("Connected");
         MakeTables.TableCreation(conn);
-        FillTables.insertLocations(conn);
+        FillTables.insertIntoTables(conn);
       } catch (SQLException e) {
         e.printStackTrace();
       }
@@ -98,7 +97,7 @@ public class ClientServer
       DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
       Scanner in = new Scanner(clientSocket.getInputStream());
 
-      String query = "SELECT * FROM ABILITY WHERE Name = 'lightning'";
+      String query = "SELECT * FROM GENERIC_ITEM WHERE Gen_Item_ID = 'i1'";
 
 
 
