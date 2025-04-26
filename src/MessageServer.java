@@ -51,7 +51,7 @@ public class MessageServer {
       }
       System.out.println("[Server] Received message: " + message);
 
-//      this is where things seem to fail/break/not work
+      //this is where things seem to fail/break/not work
       // try to open the DB
       DriverManager.setLoginTimeout(30);    // fail in 30s if DB is unreachable
       try (Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD)) {
@@ -86,12 +86,43 @@ public class MessageServer {
         case "INSERT" -> handleInsert(conn, message);
         case "UPDATE" -> handleUpdate(conn, message);
         case "DELETE" -> handleDelete(conn, message);
+        case "CALL" -> storedProcedure(conn, message);
         default -> "Invalid command type: " + commandWord;
       };
     } catch (SQLException e) {
       return "SQL Error: " + e.getMessage();
     } catch (Exception e) {
       return "Server Processing Error: " + e.getMessage();
+    }
+  }
+
+  //handles the stored procedure calls
+  private static String storedProcedure(Connection conn, String message) {
+    try (CallableStatement stmt = conn.prepareCall(message)) {
+      boolean hasResults = stmt.execute();
+      StringBuilder result = new StringBuilder();
+
+      if (hasResults) {
+        try (ResultSet rs = stmt.getResultSet()) {
+          ResultSetMetaData meta = rs.getMetaData();
+          int colCount = meta.getColumnCount();
+
+          for (int i = 1; i <= colCount; i++) {
+            result.append(meta.getColumnName(i)).append("\t");
+          }
+          result.append("\n");
+
+          while (rs.next()) {
+            for (int i = 1; i < colCount; i++) {
+              result.append(rs.getString(i)).append("\t");
+            }
+            result.append("\n");
+          }
+        }
+      }
+      return result.toString();
+    } catch (SQLException e) {
+      return "SQL Error: " + e.getMessage();
     }
   }
 
@@ -111,7 +142,7 @@ public class MessageServer {
 
 
       while (rs.next()) {
-        for (int i = 1; i <= colCount; i++) {
+        for (int i = 1; i < colCount; i++) {
           result.append(rs.getString(i)).append("\t");
         }
         result.append("\n");

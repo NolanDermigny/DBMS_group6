@@ -11,7 +11,7 @@ public class MessageClient {
 
       System.out.println("[Client] Connected to server.");
 //      example query
-      String message = "SELECT * FROM JOBS";
+      String message = "SELECT * FROM PERSON";
       out.println(message);
       System.out.println("[Client] Sent message: " + message);
 
