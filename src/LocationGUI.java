@@ -16,13 +16,11 @@ public class LocationGUI extends JFrame {
 //  private String viewLocation;
 
   public static void main(String[] args) {
-    SwingUtilities.invokeLater(() -> {
-      LocationGUI gui = new LocationGUI();
-      gui.setVisible(true);
-    });
+    LocationGUI gui = new LocationGUI();
+    gui.setVisible(true);
   }
-  public LocationGUI() {
 
+  public LocationGUI() {
     setTitle("Locations");
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     setSize(450, 500);
@@ -45,8 +43,8 @@ public class LocationGUI extends JFrame {
   public Component setMainPanel() {
 
     JPanel mainPanel = createBasePanel();
-    JLabel title = createTitleLabel("View Locations");
-    mainPanel.add(title, BorderLayout.NORTH);
+//    JLabel title = createTitleLabel("Location GUI");
+//    mainPanel.add(title, BorderLayout.NORTH);
     JPanel buttons = new JPanel(new GridLayout(3, 1));
 //    make the buttons black
     buttons.setForeground(new Color(255, 255, 255));
@@ -113,7 +111,7 @@ private Component viewDBLocations() {
   JPanel locationPanel = new JPanel(new BorderLayout());
   JPanel buttonPanel = new JPanel(new GridLayout(0, 1));
 
-  ArrayList<String> locations = fetchFromDatabase("SELECT Location_ID, Description FROM LOCATION");
+  ArrayList<String> locations = fetchFromDatabase("SELECT Location_ID, Location_Type FROM LOCATION");
   for (String loc : locations) {
     String[] parts = loc.split(", ");
     String locId = parts[0];
@@ -143,11 +141,15 @@ private Component viewDBLocations() {
 
     // Fetch location details
     ArrayList<String> locationDetails = fetchFromDatabase(
-          "SELECT Description, Location_Type, Exit_ID FROM LOCATION WHERE Location_ID = " + locationId
-    );
+          "SELECT Location_ID, Location_Type, Exit_ID FROM LOCATION WHERE Location_ID = " + locationId);
 
     if (!locationDetails.isEmpty()) {
-      detailsTextArea.setText(locationDetails.get(0));  // Show fetched details
+      String[] parts = locationDetails.get(0).split(", ");
+      if (parts.length >= 3) {
+        detailsTextArea.setText("Location ID: " + parts[0] + "\n" +
+              "Location Type: " + parts[1] + "\n" +
+              "Exit ID: " + parts[2]);
+      }
     } else {
       detailsTextArea.setText("No details found.");
     }
@@ -193,17 +195,19 @@ private Component viewDBLocations() {
             if (choice == null || choice.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Invalid choice.");
             } else {
-                if (choice.equals("1")) {
+              if (choice.equals("1")) {
                 String exitID = JOptionPane.showInputDialog("Enter Exit ID to add:");
                 if (exitID != null && !exitID.trim().isEmpty()) {
-                    // add sql query to add exit
-                    JOptionPane.showMessageDialog(this, "Exit " + exitID + " added to location " + locationID);
+                  String sql = "UPDATE LOCATION SET Exit_ID = " + exitID + " WHERE Location_ID = " + locationID;
+                  sendQuery(sql);
+                  JOptionPane.showMessageDialog(this, "Exit " + exitID + " added to location " + locationID);
                 }
-                } else if (choice.equals("2")) {
+              } else if (choice.equals("2")) {
                 String exitID = JOptionPane.showInputDialog("Enter Exit ID to remove:");
                 if (exitID != null && !exitID.trim().isEmpty()) {
-                    // add sql query to remove exit
-                    JOptionPane.showMessageDialog(this, "Exit " + exitID + " removed from location " + locationID);
+                  String sql = "UPDATE LOCATION SET Exit_ID = NULL WHERE Location_ID = " + locationID;
+                  sendQuery(sql);
+                  JOptionPane.showMessageDialog(this, "Exit removed from location " + locationID);
                 }
                 } else {
                 JOptionPane.showMessageDialog(this, "Invalid choice.");
@@ -224,10 +228,22 @@ private Component viewDBLocations() {
       }
     });
     addLocButton.addActionListener(e -> {
-      String description = JOptionPane.showInputDialog(this, "Enter Location Description:");
+      String locID = JOptionPane.showInputDialog(this, "Enter Location ID:");
       String locationType = JOptionPane.showInputDialog(this, "Enter Location Type:");
-      String sql = "INSERT INTO LOCATION (Description, Location_Type) VALUES ('" + description + "', '" + locationType + "')";
-      sendQuery(sql);
+      String sizeStr = JOptionPane.showInputDialog(this, "Enter Size of Location:");
+      String exitID = JOptionPane.showInputDialog(this, "Enter Exit ID:");
+
+      if (locID != null && locationType != null && sizeStr != null) {
+        try {
+          int size = Integer.parseInt(sizeStr);
+          String sql = "INSERT INTO LOCATION (LocationID, Location_Type, Size, Exit_ID) VALUES ('" +
+                locID + "', " + locationType + "', " + size + ", '" + exitID + "')";
+          sendQuery(sql);
+          JOptionPane.showMessageDialog(this, "Location added successfully.");
+        } catch (NumberFormatException ex) {
+          JOptionPane.showMessageDialog(this, "Invalid size entered.");
+        }
+      }
     });
     backButton.addActionListener(e -> showScreen("home"));
 
