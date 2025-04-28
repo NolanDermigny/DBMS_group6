@@ -35,42 +35,50 @@ public class MessageServer {
 //  this may need updated... the message gets recieved from the client,
 //  but the server doesn't seem to connect to the database itself.
   private static void handleClient(Socket clientSocket) {
-    System.out.println("[Server] Handling client: " +
-          clientSocket.getInetAddress() + ":" + clientSocket.getPort());
-    BufferedReader in;
-    PrintWriter out;
-    try {
-      in  = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-      out = new PrintWriter(clientSocket.getOutputStream(), true);
+    try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+         BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+         Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD);
+         Statement stmt = conn.createStatement()) {
 
-      // read the client’s SQL
-      String message = in.readLine();
-      if (message == null) {
-        System.out.println("[Server] client closed connection immediately");
-        return;
+      String sql = in.readLine();
+      System.out.println("[Server] Received query: " + sql);
+
+      if (sql.trim().toLowerCase().startsWith("select")) {
+        ResultSet rs = stmt.executeQuery(sql);
+        ResultSetMetaData meta = rs.getMetaData();
+        int columnCount = meta.getColumnCount();
+
+        // Send column header first
+        StringBuilder header = new StringBuilder();
+        for (int i = 1; i <= columnCount; i++) {
+          header.append(meta.getColumnName(i));
+          if (i < columnCount) header.append(", ");
+        }
+        out.write(header.toString());
+        out.newLine();
+
+        // Send each row
+        while (rs.next()) {
+          StringBuilder row = new StringBuilder();
+          for (int i = 1; i <= columnCount; i++) {
+            row.append(rs.getString(i));
+            if (i < columnCount) row.append(", ");
+          }
+          out.write(row.toString());
+          out.newLine();
+        }
+        out.flush();
+      } else {
+        //for UPDATE, SEARCH, and DELETE
+        stmt.executeUpdate(sql);
+        out.write("OK");
+        out.newLine();
+        out.flush();
       }
-      System.out.println("[Server] Received message: " + message);
 
-      //this is where things seem to fail/break/not work
-      // try to open the DB
-      DriverManager.setLoginTimeout(30);    // fail in 30s if DB is unreachable
-      try (Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD)) {
-        System.out.println("[Server] Connected to database.");
-        String response = executeSQL(conn, message);
-        out.println(response);
-      } catch (SQLException e) {
-        System.err.println("[Server] DB error:");
-        e.printStackTrace();
-        out.println("SQL Error: " + e.getMessage());
-      }
-
-    } catch (IOException e) {
+    } catch (Exception e) {
+      System.out.println("[Server] Error: " + e.getMessage());
       e.printStackTrace();
-    } finally {
-      try {
-        clientSocket.close();
-        System.out.println("[Server] Client disconnected.");
-      } catch (IOException ignored) {}
     }
   }
 
