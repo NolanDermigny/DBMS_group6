@@ -181,7 +181,6 @@ public class MessageServer {
         }
         result.append("\n");
       }
-      //return storedProcedure(conn, result.toString());
       return result.toString();
     }
   }
