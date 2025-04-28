@@ -134,6 +134,14 @@ public class MessageServer {
     }
   }
 
+  /**
+   *
+   * Doesn't use a Stored Procedure.
+   * @param conn
+   * @param query
+   * @return
+   * @throws SQLException
+   */
   private static String handleSelect(Connection conn, String query) throws SQLException {
     try (Statement stmt = conn.createStatement();
          ResultSet rs = stmt.executeQuery(query)) {
@@ -155,28 +163,32 @@ public class MessageServer {
         }
         result.append("\n");
       }
-      return result.toString();
+      return storedProcedure(conn, result.toString());
+      //return result.toString();
     }
   }
 
   private static String handleInsert(Connection conn, String query) throws SQLException {
     try (PreparedStatement stmt = conn.prepareStatement(query)) {
       int rowsAffected = stmt.executeUpdate();
-      return rowsAffected + (" row(s) inserted.");
+      return storedProcedure(conn, rowsAffected + (" row(s) inserted."));
+      //return rowsAffected + (" row(s) inserted.");
     }
   }
 
   private static String handleUpdate(Connection conn, String query) throws SQLException {
     try (PreparedStatement stmt = conn.prepareStatement(query)) {
       int rowsAffected = stmt.executeUpdate();
-      return rowsAffected + (" row(s) updated.");
+      return storedProcedure(conn, rowsAffected + (" row(s) updated."));
+      //return rowsAffected + (" row(s) updated.");
     }
   }
 
   private static String handleDelete(Connection conn, String query) throws SQLException {
     try (PreparedStatement stmt = conn.prepareStatement(query)) {
       int rowsAffected = stmt.executeUpdate();
-      return rowsAffected + (" row(s) deleted.");
+      return storedProcedure(conn, rowsAffected + (" row(s) deleted."));
+      //return rowsAffected + (" row(s) deleted.");
     }
   }
 }
