@@ -31,7 +31,7 @@ public class MessageServer {
       e.printStackTrace();
     }
   }
-
+/*
 //  this may need updated... the message gets recieved from the client,
 //  but the server doesn't seem to connect to the database itself.
   private static void handleClient(Socket clientSocket) {
@@ -42,7 +42,7 @@ public class MessageServer {
 
       String sql = in.readLine();
       System.out.println("[Server] Received query: " + sql);
-
+      /*
       if (sql.trim().toLowerCase().startsWith("select")) {
         ResultSet rs = stmt.executeQuery(sql);
         ResultSetMetaData meta = rs.getMetaData();
@@ -75,7 +75,25 @@ public class MessageServer {
         out.newLine();
         out.flush();
       }
+    } catch (Exception e) {
+      System.out.println("[Server] Error: " + e.getMessage());
+      e.printStackTrace();
+    }
+  }
+  */
 
+  private static void handleClient(Socket clientSocket) {
+    try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+         BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+         Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD);
+         Statement stmt = conn.createStatement()) {
+
+      String sql = in.readLine();
+      System.out.println("[Server] Received query: " + sql);
+      String result = executeSQL(conn,sql);
+      out.write(result);
+      out.newLine();
+      out.flush();
     } catch (Exception e) {
       System.out.println("[Server] Error: " + e.getMessage());
       e.printStackTrace();
@@ -151,44 +169,41 @@ public class MessageServer {
       StringBuilder result = new StringBuilder();
 
 
-      for (int i = 1; i <= colCount; i++) {
+      for (int i = 1; i < colCount; i++) {
         result.append(meta.getColumnName(i)).append("\t");
       }
       result.append("\n");
 
 
       while (rs.next()) {
-        for (int i = 1; i < colCount; i++) {
+        for (int i = 1; i <= colCount; i++) {
           result.append(rs.getString(i)).append("\t");
         }
         result.append("\n");
       }
-      return storedProcedure(conn, result.toString());
-      //return result.toString();
+      //return storedProcedure(conn, result.toString());
+      return result.toString();
     }
   }
 
   private static String handleInsert(Connection conn, String query) throws SQLException {
     try (PreparedStatement stmt = conn.prepareStatement(query)) {
       int rowsAffected = stmt.executeUpdate();
-      return storedProcedure(conn, rowsAffected + (" row(s) inserted."));
-      //return rowsAffected + (" row(s) inserted.");
+      return rowsAffected + (" row(s) inserted.");
     }
   }
 
   private static String handleUpdate(Connection conn, String query) throws SQLException {
     try (PreparedStatement stmt = conn.prepareStatement(query)) {
       int rowsAffected = stmt.executeUpdate();
-      return storedProcedure(conn, rowsAffected + (" row(s) updated."));
-      //return rowsAffected + (" row(s) updated.");
+      return rowsAffected + (" row(s) updated.");
     }
   }
 
   private static String handleDelete(Connection conn, String query) throws SQLException {
     try (PreparedStatement stmt = conn.prepareStatement(query)) {
       int rowsAffected = stmt.executeUpdate();
-      return storedProcedure(conn, rowsAffected + (" row(s) deleted."));
-      //return rowsAffected + (" row(s) deleted.");
+      return rowsAffected + (" row(s) deleted.");
     }
   }
 }
