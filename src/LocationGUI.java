@@ -61,6 +61,7 @@ public class LocationGUI extends JFrame {
 
   /**
    * Creates the main home panel with navigation buttons.
+   *
    * @return the home panel
    */
   public Component setMainPanel() {
@@ -82,7 +83,9 @@ public class LocationGUI extends JFrame {
     editLocsButton.addActionListener(e -> {
       showScreen("Edit Locations");
     });
-    exitButton.addActionListener(e -> {System.exit(0);});
+    exitButton.addActionListener(e -> {
+      System.exit(0);
+    });
 
     buttons.add(viewLocsButton);
     buttons.add(editLocsButton);
@@ -93,114 +96,134 @@ public class LocationGUI extends JFrame {
 
   /**
    * Creates a simple location viewing panel with dummy locations.
+   *
    * @return the location viewing panel
    */
-private Component viewLocations() {
-  JPanel locationPanel = new JPanel(new BorderLayout());
-  JPanel buttonPanel = new JPanel(new GridLayout(0, 1));
+  private Component viewLocations() {
+    JPanel locationPanel = new JPanel(new BorderLayout());
+    JPanel buttonPanel = new JPanel(new GridLayout(0, 1));
 
-  String[] locations = {"Location 1", "Location 2", "Location 3", "Location 4", "Location 5", "Location 6"};
-  for (String location : locations) {
-    JButton button = createButton(location);
-    button.addActionListener(e -> cl.show(mainPanel, "details"));
-    buttonPanel.add(button);
-  }
+    String[] locations = {"Location 1", "Location 2", "Location 3", "Location 4", "Location 5", "Location 6"};
+    for (String location : locations) {
+      JButton button = createButton(location);
+      button.addActionListener(e -> cl.show(mainPanel, "details"));
+      buttonPanel.add(button);
+    }
 
-  JButton backButton = createButton("Back");
-  backButton.addActionListener(e -> showScreen("home"));
+    JButton backButton = createButton("Back");
+    backButton.addActionListener(e -> showScreen("home"));
 
-  locationPanel.add(new JScrollPane(buttonPanel), BorderLayout.CENTER);
-  locationPanel.add(backButton, BorderLayout.SOUTH);
+    locationPanel.add(new JScrollPane(buttonPanel), BorderLayout.CENTER);
+    locationPanel.add(backButton, BorderLayout.SOUTH);
 
-  JPanel detailsPanel = new JPanel(new BorderLayout());
-  JLabel detailsLabel = new JLabel("Details: ");
-  JTextArea detailsTextArea = new JTextArea(10, 30);
-  detailsTextArea.setEditable(false);
-
-  JButton backButton2 = createButton("Back");
-  backButton2.addActionListener(e -> {
-    cl.show(mainPanel, "View Locations");
-    detailsTextArea.setText("");
-  });
-
-  detailsPanel.add(detailsLabel, BorderLayout.NORTH);
-  detailsPanel.add(new JScrollPane(detailsTextArea), BorderLayout.CENTER);
-  detailsPanel.add(backButton2, BorderLayout.SOUTH);
-
-  mainPanel.add(locationPanel, "View Locations");
-  mainPanel.add(detailsPanel, "details");
-
-  return locationPanel;
-}
-
-/**
- * Fetches location information from the database and creates a viewing panel.
- * @return the database-backed location viewing panel
- */
-private Component viewDBLocations() {
-  JPanel locationPanel = new JPanel(new BorderLayout());
-  JPanel buttonPanel = new JPanel(new GridLayout(0, 1));
-
-  ArrayList<String> locations = fetchFromDatabase("SELECT Location_ID, Location_Type FROM LOCATION");
-  for (String loc : locations) {
-    String[] parts = loc.split(", ");
-    String locId = parts[0];
-    String desc = (parts.length > 1) ? parts[1] : "Unknown"; // <-- safeguard
-
-    JButton button = createButton("[" + locId + "] " + desc);
-    button.addActionListener(e -> showLocationDetails(locId));
-    buttonPanel.add(button);
-  }
-
-  JButton backButton = createButton("Back");
-  backButton.addActionListener(e -> showScreen("home"));
-
-  locationPanel.add(new JScrollPane(buttonPanel), BorderLayout.CENTER);
-  locationPanel.add(backButton, BorderLayout.SOUTH);
-
-  mainPanel.add(locationPanel, "View Locations");
-
-  return locationPanel;
-}
-
-/**
- * Displays the detailed information for a selected location.
- * @param locationId ID of the location to show
- */
-  private void showLocationDetails(String locationId) {
     JPanel detailsPanel = new JPanel(new BorderLayout());
-    JLabel detailsLabel = new JLabel("Location Details:");
+    JLabel detailsLabel = new JLabel("Details: ");
     JTextArea detailsTextArea = new JTextArea(10, 30);
     detailsTextArea.setEditable(false);
 
-    // Fetch location details
+    JButton backButton2 = createButton("Back");
+    backButton2.addActionListener(e -> {
+      cl.show(mainPanel, "View Locations");
+      detailsTextArea.setText("");
+    });
+
+    detailsPanel.add(detailsLabel, BorderLayout.NORTH);
+    detailsPanel.add(new JScrollPane(detailsTextArea), BorderLayout.CENTER);
+    detailsPanel.add(backButton2, BorderLayout.SOUTH);
+
+    mainPanel.add(locationPanel, "View Locations");
+    mainPanel.add(detailsPanel, "details");
+
+    return locationPanel;
+  }
+
+  /**
+   * Fetches location information from the database and creates a viewing panel.
+   *
+   * @return the database-backed location viewing panel
+   */
+// Add a refresh button to the location panel
+  private Component viewDBLocations() {
+    JPanel locationPanel = new JPanel(new BorderLayout());
+    JPanel buttonPanel = new JPanel(new GridLayout(0, 1));
+
+    // Fetch and display locations
+    updateLocationButtons(buttonPanel);
+
+    JButton refreshButton = createButton("Refresh");
+    refreshButton.addActionListener(e -> {
+      buttonPanel.removeAll(); // Clear existing buttons
+      updateLocationButtons(buttonPanel); // Re-fetch and add updated buttons
+      buttonPanel.revalidate();
+      buttonPanel.repaint();
+    });
+
+    JButton backButton = createButton("Back");
+    backButton.addActionListener(e -> showScreen("home"));
+
+    locationPanel.add(new JScrollPane(buttonPanel), BorderLayout.CENTER);
+    JPanel bottomPanel = new JPanel(new GridLayout(1, 2));
+    bottomPanel.add(refreshButton);
+    bottomPanel.add(backButton);
+    locationPanel.add(bottomPanel, BorderLayout.SOUTH);
+
+    mainPanel.add(locationPanel, "View Locations");
+
+    return locationPanel;
+  }
+
+  // Helper method to fetch and add location buttons
+  private void updateLocationButtons(JPanel buttonPanel) {
+    ArrayList<String> locations = fetchFromDatabase("SELECT Location_ID, Location_Type FROM LOCATION");
+    for (String loc : locations) {
+      String[] parts = loc.split("\\t");
+      String locId   = parts[0];
+      String desc    = (parts.length > 1) ? parts[1] : "Unknown";
+
+      JButton button = createButton("[" + locId + "] " + desc);
+      button.addActionListener(e -> showLocationDetails(locId));
+      buttonPanel.add(button);
+    }
+  }
+
+  /**
+   * Displays the detailed information for a selected location.
+   *
+   * @param locationId ID of the location to show
+   */
+  private void showLocationDetails(String locationId) {
     ArrayList<String> locationDetails = fetchFromDatabase(
-          "SELECT Location_ID, Location_Type, Exit_ID FROM LOCATION WHERE Location_ID = " + locationId);
+          "SELECT Location_ID, Location_Type, Exit_ID FROM LOCATION WHERE Location_ID = " + locationId
+    );
+
+    JTextArea detailsTextArea = new JTextArea(10, 30);
+    detailsTextArea.setEditable(false);
 
     if (!locationDetails.isEmpty()) {
-      String[] parts = locationDetails.get(0).split(", ");
+      String raw = locationDetails.get(0);
+      String[] parts = raw.split("\\t");
       if (parts.length >= 3) {
-        detailsTextArea.setText("Location ID: " + parts[0] + "\n" +
-              "Location Type: " + parts[1] + "\n" +
-              "Exit ID: " + parts[2]);
+        detailsTextArea.setText(
+              "Location ID: "   + parts[0].trim() + "\n" +
+                    "Location Type: " + parts[1].trim() + "\n" +
+                    "Exit ID: "       + parts[2].trim()
+        );
+      } else {
+        detailsTextArea.setText("Incomplete details found.");
       }
     } else {
       detailsTextArea.setText("No details found.");
     }
 
-    JButton backButton = createButton("Back");
-    backButton.addActionListener(e -> showScreen("View Locations"));
-
-    detailsPanel.add(detailsLabel, BorderLayout.NORTH);
+    JPanel detailsPanel = new JPanel(new BorderLayout());
+    detailsPanel.add(new JLabel("Location Details:"), BorderLayout.NORTH);
     detailsPanel.add(new JScrollPane(detailsTextArea), BorderLayout.CENTER);
-    detailsPanel.add(backButton, BorderLayout.SOUTH);
-
-    mainPanel.add(detailsPanel, "details");
-
-    showScreen("details");
+    JOptionPane.showMessageDialog(this, detailsPanel, "Location Details", JOptionPane.INFORMATION_MESSAGE);
   }
 
-// for editing:
+
+
+  // for editing:
 //  1. add or remove an exit from a location
 //  after user selects "edit location" from menu prompt for location ID
 //  show users the current exits for entered location ID
@@ -223,30 +246,31 @@ private Component viewDBLocations() {
       String locationID = JOptionPane.showInputDialog("Enter Location ID:");
       if (locationID == null || locationID.trim().isEmpty()) {
         JOptionPane.showMessageDialog(this, "Location ID: " + locationID + "Does not exist.");
-      }
-        else {
-          String choice = JOptionPane.showInputDialog("Enter 1 to add an exit, 2 to remove an exit:");
-            if (choice == null || choice.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Invalid choice.");
-            } else {
-              if (choice.equals("1")) {
-                String exitID = JOptionPane.showInputDialog("Enter Exit ID to add:");
-                if (exitID != null && !exitID.trim().isEmpty()) {
-                  String sql = "UPDATE LOCATION SET Exit_ID = " + exitID + " WHERE Location_ID = " + locationID;
-                  sendQuery(sql);
-                  JOptionPane.showMessageDialog(this, "Exit " + exitID + " added to location " + locationID);
-                }
-              } else if (choice.equals("2")) {
-                String exitID = JOptionPane.showInputDialog("Enter Exit ID to remove:");
-                if (exitID != null && !exitID.trim().isEmpty()) {
-                  String sql = "UPDATE LOCATION SET Exit_ID = NULL WHERE Location_ID = " + locationID;
-                  sendQuery(sql);
-                  JOptionPane.showMessageDialog(this, "Exit removed from location " + locationID);
-                }
-                } else {
-                JOptionPane.showMessageDialog(this, "Invalid choice.");
-                }
+      } else {
+        String choice = JOptionPane.showInputDialog("Enter 1 to add an exit, 2 to remove an exit:");
+        if (choice == null || choice.trim().isEmpty()) {
+          JOptionPane.showMessageDialog(this, "Invalid choice.");
+        } else {
+          if (choice.equals("1")) {
+            String exitID = JOptionPane.showInputDialog("Enter Exit ID to add:");
+            if (exitID != null && !exitID.trim().isEmpty()) {
+              String sql = "UPDATE LOCATION SET Exit_ID = " + exitID + " WHERE Location_ID = " + locationID;
+              String result = sendQuery(sql);
+              JOptionPane.showMessageDialog(this, result);
+              JOptionPane.showMessageDialog(this, "Exit " + exitID + " added to location " + locationID);
             }
+          } else if (choice.equals("2")) {
+            String exitID = JOptionPane.showInputDialog("Enter Exit ID to remove:");
+            if (exitID != null && !exitID.trim().isEmpty()) {
+              String sql = "UPDATE LOCATION SET Exit_ID = NULL WHERE Location_ID = " + locationID;
+              String result = sendQuery(sql);
+              JOptionPane.showMessageDialog(this, result);
+              JOptionPane.showMessageDialog(this, "Exit removed from location " + locationID);
+            }
+          } else {
+            JOptionPane.showMessageDialog(this, "Invalid choice.");
+          }
+        }
       }
     });
 
@@ -254,10 +278,10 @@ private Component viewDBLocations() {
       String locationID = JOptionPane.showInputDialog(this, "Enter Location ID to Remove:");
       if (locationID != null && !locationID.isEmpty()) {
         String sql = "DELETE FROM LOCATION WHERE Location_ID = " + locationID;
-        sendQuery(sql);
+        String result = sendQuery(sql);
+        JOptionPane.showMessageDialog(this, result);
         JOptionPane.showMessageDialog(this, "Location removed successfully.");
-      }
-      else {
+      } else {
         locationID = JOptionPane.showInputDialog(this, "Location ID does not exist. Try again.");
       }
     });
@@ -270,9 +294,11 @@ private Component viewDBLocations() {
       if (locID != null && locationType != null && sizeStr != null) {
         try {
           int size = Integer.parseInt(sizeStr);
-          String sql = "INSERT INTO LOCATION (LocationID, Location_Type, Size, Exit_ID) VALUES ('" +
-                locID + "', " + locationType + "', " + size + ", '" + exitID + "')";
-          sendQuery(sql);
+          // Corrected SQL query with proper single quotes
+          String sql = "INSERT INTO LOCATION (Location_ID, Location_Type, Size, Exit_ID) VALUES ('" +
+                locID + "', '" + locationType + "', " + size + ", '" + exitID + "')";
+          String result = sendQuery(sql);
+          JOptionPane.showMessageDialog(this, result);
           JOptionPane.showMessageDialog(this, "Location added successfully.");
         } catch (NumberFormatException ex) {
           JOptionPane.showMessageDialog(this, "Invalid size entered.");
@@ -290,19 +316,20 @@ private Component viewDBLocations() {
   }
 
 
-
 //  HELPER FUNCTIONS FROM AMANDA'S GUI_CHARACTER //
 
   /**
    * Switches the displayed screen in the CardLayout.
+   *
    * @param name the screen name
    */
   private void showScreen(String name) {
     cl.show(mainPanel, name);
   }
-  
+
   /**
    * Creates a basic JPanel with a BorderLayout and background color.
+   *
    * @return the base panel
    */
   private JPanel createBasePanel() {
@@ -313,6 +340,7 @@ private Component viewDBLocations() {
 
   /**
    * Creates a formatted title JLabel.
+   *
    * @param text title text
    * @return the JLabel
    */
@@ -325,6 +353,7 @@ private Component viewDBLocations() {
 
   /**
    * Creates a panel for listing components vertically.
+   *
    * @return the list panel
    */
   private JPanel createListPanel() {
@@ -335,6 +364,7 @@ private Component viewDBLocations() {
 
   /**
    * Creates a form panel with a specified number of rows.
+   *
    * @param rows number of rows
    * @return the form panel
    */
@@ -346,6 +376,7 @@ private Component viewDBLocations() {
 
   /**
    * Creates a styled button with text.
+   *
    * @param text button text
    * @return the JButton
    */
@@ -361,6 +392,7 @@ private Component viewDBLocations() {
 
   /**
    * Creates a specially styled exit button.
+   *
    * @param text button text
    * @return the exit JButton
    */
@@ -372,6 +404,7 @@ private Component viewDBLocations() {
 
   /**
    * Fetches results from the database using a socket connection.
+   *
    * @param query SQL query
    * @return list of result strings
    */
@@ -388,6 +421,9 @@ private Component viewDBLocations() {
           skipHeader = false;
           continue;
         }
+        if (line.trim().isEmpty()) {
+          continue;
+        }
         results.add(line.trim());
       }
     } catch (IOException e) {
@@ -398,15 +434,25 @@ private Component viewDBLocations() {
 
   /**
    * Sends an update or insert query to the database using a socket.
+   *
    * @param query SQL query to execute
    */
-  private void sendQuery(String query) {
+  private String sendQuery(String query) {
     try (Socket socket = new Socket("127.0.0.1", 4446);
-         PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+         PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
       out.println(query);
+
+      String response = in.readLine();
+      return (response != null ? response : "No response from server");
+
     } catch (IOException e) {
       e.printStackTrace();
+      return "Client I/O error: " + e.getMessage();
     }
   }
 }
+
+
 
