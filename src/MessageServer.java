@@ -142,7 +142,7 @@ public class MessageServer {
 			result.append("\n");
 
 			while (rs.next()) {
-				for (int i = 1; i < colCount; i++) {
+				for (int i = 1; i <= colCount; i++) {
 					result.append(rs.getString(i)).append("\t");
 				}
 				result.append("\n");

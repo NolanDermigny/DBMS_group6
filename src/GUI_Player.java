@@ -105,7 +105,7 @@ public class GUI_Player extends JFrame {
     add.addActionListener(e -> {
       String email = emailField.getText();
       String login = loginField.getText();
-      String password = new String(passwordField.getPassword()); // get text from JPasswordField
+      String password = new String(passwordField.getPassword());
 
 
       String sql = "INSERT INTO PERSON (Login, Creation_Date, Password, Email, Type_Of_Account, Above_Account_ID, Creature_ID, Character_Name) " +
@@ -386,6 +386,7 @@ public class GUI_Player extends JFrame {
 
   public static void main(String[] args) {
     GUI_Player gui = new GUI_Player();
+
 
   }
 }
