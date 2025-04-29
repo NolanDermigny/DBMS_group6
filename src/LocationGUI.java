@@ -8,18 +8,27 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 
+/**
+ * LocationGUI provides a GUI interface to view, edit, add, and remove locations
+ * by interacting with a backend database through sockets.
+ */
 public class LocationGUI extends JFrame {
 
-  private final JPanel mainPanel;
-  private final CardLayout cl;
-//  private String selectedLocation;
-//  private String viewLocation;
+  private final JPanel mainPanel; // Main panel that holds all other panels using CardLayout
+  private final CardLayout cl; // CardLayout used to switch between different screens (home, view, edit)
 
+  /**
+   * Main method that creates and displays the Location GUI window.
+   * Entry point of the application.
+   */
   public static void main(String[] args) {
     LocationGUI gui = new LocationGUI();
     gui.setVisible(true);
   }
 
+  /**
+   * Constructor sets up the main GUI frame and initializes all screens.
+   */
   public LocationGUI() {
     setTitle("Locations");
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -40,6 +49,10 @@ public class LocationGUI extends JFrame {
 
   }
 
+  /**
+   * Creates the main home panel with navigation buttons.
+   * @return the home panel
+   */
   public Component setMainPanel() {
 
     JPanel mainPanel = createBasePanel();
@@ -68,7 +81,10 @@ public class LocationGUI extends JFrame {
     return mainPanel;
   }
 
-//  pull details from sql database
+  /**
+   * Creates a simple location viewing panel with dummy locations.
+   * @return the location viewing panel
+   */
 private Component viewLocations() {
   JPanel locationPanel = new JPanel(new BorderLayout());
   JPanel buttonPanel = new JPanel(new GridLayout(0, 1));
@@ -107,6 +123,10 @@ private Component viewLocations() {
   return locationPanel;
 }
 
+/**
+ * Fetches location information from the database and creates a viewing panel.
+ * @return the database-backed location viewing panel
+ */
 private Component viewDBLocations() {
   JPanel locationPanel = new JPanel(new BorderLayout());
   JPanel buttonPanel = new JPanel(new GridLayout(0, 1));
@@ -133,6 +153,10 @@ private Component viewDBLocations() {
   return locationPanel;
 }
 
+/**
+ * Displays the detailed information for a selected location.
+ * @param locationId ID of the location to show
+ */
   private void showLocationDetails(String locationId) {
     JPanel detailsPanel = new JPanel(new BorderLayout());
     JLabel detailsLabel = new JLabel("Location Details:");
@@ -259,15 +283,29 @@ private Component viewDBLocations() {
 
 //  HELPER FUNCTIONS FROM AMANDA'S GUI_CHARACTER //
 
+  /**
+   * Switches the displayed screen in the CardLayout.
+   * @param name the screen name
+   */
   private void showScreen(String name) {
     cl.show(mainPanel, name);
   }
+  
+  /**
+   * Creates a basic JPanel with a BorderLayout and background color.
+   * @return the base panel
+   */
   private JPanel createBasePanel() {
     JPanel panel = new JPanel(new BorderLayout(10, 10));
     panel.setBackground(new Color(245, 245, 250));
     return panel;
   }
 
+  /**
+   * Creates a formatted title JLabel.
+   * @param text title text
+   * @return the JLabel
+   */
   private JLabel createTitleLabel(String text) {
     JLabel label = new JLabel(text, SwingConstants.CENTER);
     label.setFont(new Font("Segoe UI", Font.BOLD, 26));
@@ -275,18 +313,32 @@ private Component viewDBLocations() {
     return label;
   }
 
+  /**
+   * Creates a panel for listing components vertically.
+   * @return the list panel
+   */
   private JPanel createListPanel() {
     JPanel panel = new JPanel(new GridLayout(0, 1, 10, 10));
     panel.setBackground(new Color(245, 245, 250));
     return panel;
   }
 
+  /**
+   * Creates a form panel with a specified number of rows.
+   * @param rows number of rows
+   * @return the form panel
+   */
   private JPanel createFormPanel(int rows) {
     JPanel panel = new JPanel(new GridLayout(rows, 1, 10, 10));
     panel.setOpaque(false);
     return panel;
   }
 
+  /**
+   * Creates a styled button with text.
+   * @param text button text
+   * @return the JButton
+   */
   private JButton createButton(String text) {
     JButton button = new JButton(text);
     button.setFocusPainted(false);
@@ -297,12 +349,22 @@ private Component viewDBLocations() {
     return button;
   }
 
+  /**
+   * Creates a specially styled exit button.
+   * @param text button text
+   * @return the exit JButton
+   */
   private JButton createExitButton(String text) {
     JButton button = createButton(text);
     button.setBackground(new Color(255, 204, 204));
     return button;
   }
 
+  /**
+   * Fetches results from the database using a socket connection.
+   * @param query SQL query
+   * @return list of result strings
+   */
   private ArrayList<String> fetchFromDatabase(String query) {
     ArrayList<String> results = new ArrayList<>();
     try (Socket socket = new Socket("127.0.0.1", 4446);
@@ -324,6 +386,10 @@ private Component viewDBLocations() {
     return results;
   }
 
+  /**
+   * Sends an update or insert query to the database using a socket.
+   * @param query SQL query to execute
+   */
   private void sendQuery(String query) {
     try (Socket socket = new Socket("127.0.0.1", 4446);
          PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
@@ -333,3 +399,4 @@ private Component viewDBLocations() {
     }
   }
 }
+

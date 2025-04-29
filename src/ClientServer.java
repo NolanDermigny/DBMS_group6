@@ -1,4 +1,5 @@
 package src;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -6,112 +7,122 @@ import java.net.Socket;
 import java.sql.*;
 import java.util.Scanner;
 
+/**
+ * ClientServer class that can act as both a server and a client to send and
+ * receive SQL queries and their results.
+ */
+public class ClientServer {
+	/**
+	 * Database connection URL, login name, and password.
+	 */
+	public static final String DB_LOCATION = "jdbc:mysql://db.engr.ship.edu:3306/cmsc471_10?useTimezone=true&serverTimezone=UTC";
+	public static final String LOGIN_NAME = "cmsc471_10";
+	public static final String PASSWORD = "Password_10";
 
+	/**
+	* Main method to start the application as a server or client.
+	*/
+	public static void main(String[] args) {
+		try {
+			// Register JDBC driver
+			DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
+			// Always set up the test table on startup
+			try (Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD)) {
+				System.out.println("Connected");
+				MakeTables.TableCreation(conn);
+				FillTables.insertIntoTables(conn);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
 
-public class ClientServer
-{
-  public static final String DB_LOCATION = "jdbc:mysql://db.engr.ship.edu:3306/cmsc471_10?useTimezone=true&serverTimezone=UTC";
-  public static final String LOGIN_NAME = "cmsc471_10";
-  public static final String PASSWORD = "Password_10";
+			// Run as server or client
+			ClientServer app = new ClientServer();
+			if (args.length > 0 && args[0].equalsIgnoreCase("server")) {
+				app.setupServer();
+			} else {
+				app.setupClient();
+			}
 
-  public static void main(String[] args) {
-    try {
-      // Register JDBC driver
-      DriverManager.registerDriver(new com.mysql.cj.jdbc.Driver());
-      // Always set up the test table on startup
-      try (Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD)) {
-        System.out.println("Connected");
-        MakeTables.TableCreation(conn);
-        FillTables.insertIntoTables(conn);
-      } catch (SQLException e) {
-        e.printStackTrace();
-      }
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+	}
 
-      //Run as server or client
-      ClientServer app = new ClientServer();
-      if (args.length > 0 && args[0].equalsIgnoreCase("server")) {
-        app.setupServer();
-      } else {
-        app.setupClient();
-      }
+	/**
+	* Sets up the server to listen for client queries, process them, and send back results.
+	*/
+	public void setupServer() {
+		try (ServerSocket serverSocket = new ServerSocket(4446)) {
+			System.out.println("[Server] Listening on port 4446...");
 
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-  }
+			// Accept client connection
+			Socket incomingClient = serverSocket.accept();
+			System.out.println("[Server] Client connected.");
 
-  // SERVER: Receives query, runs it, sends results
-  public void setupServer() {
-    try (ServerSocket serverSocket = new ServerSocket(4446)) {
-      System.out.println("[Server] Listening on port 4446...");
+			// Get input and output stream
+			Scanner in = new Scanner(incomingClient.getInputStream());
+			DataOutputStream out = new DataOutputStream(incomingClient.getOutputStream());
 
-      //Accept client connection
-      Socket incomingClient = serverSocket.accept();
-      System.out.println("[Server] Client connected.");
+			// Read SQL query from client
+			String query = in.nextLine();
+			System.out.println("[Server] Received query: " + query);
 
-      //Get input and output stream
-      Scanner in = new Scanner(incomingClient.getInputStream());
-      DataOutputStream out = new DataOutputStream(incomingClient.getOutputStream());
+			StringBuilder result = new StringBuilder();
 
-      // Read SQL query from client
-      String query = in.nextLine();
-      System.out.println("[Server] Received query: " + query);
+			// Execute the query
+			try (Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD);
+					Statement stmt = conn.createStatement();
+					ResultSet rs = stmt.executeQuery(query)) {
 
-      StringBuilder result = new StringBuilder();
+				ResultSetMetaData meta = rs.getMetaData();
+				int colCount = meta.getColumnCount();
 
-      //Execute the query
-      try (Connection conn = DriverManager.getConnection(DB_LOCATION, LOGIN_NAME, PASSWORD);
-           Statement stmt = conn.createStatement();
-           ResultSet rs = stmt.executeQuery(query)) {
+				// Append
+				while (rs.next()) {
+					for (int i = 1; i <= colCount; i++) {
+						result.append(rs.getString(i));
+						if (i < colCount)
+							result.append(", ");
+					}
+					result.append("\n");
+				}
+			} catch (SQLException e) {
+				result.append("SQL Error: ").append(e.getMessage()).append("\n");
+			}
 
-        ResultSetMetaData meta = rs.getMetaData();
-        int colCount = meta.getColumnCount();
+			// Send results to the client
+			out.writeBytes(result.toString());
+			System.out.println("[Server] Sent results to client.");
 
-        //Append
-        while (rs.next()) {
-          for (int i = 1; i <= colCount; i++) {
-            result.append(rs.getString(i));
-            if (i < colCount) result.append(", ");
-          }
-          result.append("\n");
-        }
-      } catch (SQLException e) {
-        result.append("SQL Error: ").append(e.getMessage()).append("\n");
-      }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
-      //Send results to the client
-      out.writeBytes(result.toString());
-      System.out.println("[Server] Sent results to client.");
+	/**
+	* Sets up the client to send a query to the server and print the received results.
+	*/
+	public void setupClient() {
+		try (Socket clientSocket = new Socket("127.0.0.1", 4446)) {
+			System.out.println("[Client] Connected to server.");
 
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
+			// Set up output and input stream
+			DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
+			Scanner in = new Scanner(clientSocket.getInputStream());
 
-  // CLIENT: Sends query, receives and prints results
-  public void setupClient() {
-    try (Socket clientSocket = new Socket("127.0.0.1", 4446)) {
-      System.out.println("[Client] Connected to server.");
+			String query = "SELECT * FROM GENERIC_ITEM WHERE Gen_Item_ID = 'i1'";
 
-      //Set up output and input stream
-      DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
-      Scanner in = new Scanner(clientSocket.getInputStream());
+			out.writeBytes(query + "\n");
 
-      String query = "SELECT * FROM GENERIC_ITEM WHERE Gen_Item_ID = 'i1'";
+			System.out.println("[Client] Sent query to server.\n[Client] Received result:\n");
 
-
-
-      out.writeBytes(query + "\n");
-
-      System.out.println("[Client] Sent query to server.\n[Client] Received result:\n");
-
-      //Print results
-      while (in.hasNextLine()) {
-        System.out.println(in.nextLine());
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
+			// Print results
+			while (in.hasNextLine()) {
+				System.out.println(in.nextLine());
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
 }

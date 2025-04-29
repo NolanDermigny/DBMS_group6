@@ -1,4 +1,4 @@
-package src;//package src;
+package src;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,12 +8,34 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * AbilityManager provides a GUI for viewing, adding, editing, and removing
+ * abilities stored in a database, communicating with a server over sockets.
+ */
 public class AbilityManager extends JFrame {
+	 /**
+     * List model for abilities displayed in the UI.
+     */
     private DefaultListModel<String> abilityListModel;
+    
+    /**
+     * Visual list component for displaying ability names.
+     */
     private JList<String> abilityList;
+    
+    /**
+     * Text area for showing detailed information about a selected ability.
+     */
     private JTextArea abilityInfo;
+    
+    /**
+     * Internal list storing ability data, each entry as an array of fields.
+     */
     private List<String[]> abilities = new ArrayList<>();
 
+    /**
+     * Constructs the AbilityManager UI and loads ability data.
+     */
     public AbilityManager() {
         setTitle("Ability Manager");
         setSize(700, 400);
@@ -50,6 +72,9 @@ public class AbilityManager extends JFrame {
         loadAbilities();
     }
 
+    /**
+     * Loads abilities from the database and updates the UI list.
+     */
     private void loadAbilities() {
         abilities.clear();
         abilityListModel.clear();
@@ -58,14 +83,22 @@ public class AbilityManager extends JFrame {
             String[] lines = response.trim().split("\\n");
             if (lines.length > 1) {
                 for (int i = 1; i < lines.length; i++) {
-                    String[] parts = lines[i].split("\\t");
-                    abilities.add(parts);
-                    abilityListModel.addElement(parts[0]); // Name
+                    String[] parts = lines[i].split(",\\s");
+                    if (parts.length <= 6) {
+                        abilities.add(parts);
+                        abilityListModel.addElement(parts[0]); // Name
+                    } else {
+                        System.out.println("Skipping invalid ability entry: " + String.join(",", parts));
+                    }
+
                 }
             }
         }
     }
 
+    /**
+     * Displays information about the currently selected ability.
+     */
     private void showAbilityInfo() {
         int index = abilityList.getSelectedIndex();
         if (index >= 0) {
@@ -79,15 +112,24 @@ public class AbilityManager extends JFrame {
         }
     }
 
+    /**
+     * Allows the user to edit the selected ability's stat and effect amount.
+     */
     private void editAbility() {
         int index = abilityList.getSelectedIndex();
         if (index < 0) {
             JOptionPane.showMessageDialog(this, "Please select an ability to edit.");
             return;
         }
+        
         String[] ability = abilities.get(index);
         JTextField statField = new JTextField(ability[4]);
         JTextField effectField = new JTextField(ability[5]);
+        if (ability.length < 6) {
+            JOptionPane.showMessageDialog(this, "Corrupted ability data. Cannot edit.");
+            return;
+        }
+
 
         JPanel panel = new JPanel(new GridLayout(2, 2));
         panel.add(new JLabel("Stat Affected:"));
@@ -105,6 +147,9 @@ public class AbilityManager extends JFrame {
         }
     }
 
+    /**
+     * Allows the user to add a new ability to the database.
+     */
     private void addAbility() {
         JTextField nameField = new JTextField();
         JTextField soundField = new JTextField();
@@ -136,6 +181,9 @@ public class AbilityManager extends JFrame {
         }
     }
 
+    /**
+     * Allows the user to remove the selected ability from the database.
+     */
     private void removeAbility() {
         int index = abilityList.getSelectedIndex();
         if (index < 0) {
@@ -150,6 +198,12 @@ public class AbilityManager extends JFrame {
         }
     }
 
+    /**
+     * Sends an SQL query to the server and returns the response.
+     *
+     * @param query The SQL query to send.
+     * @return The server's response string, or null if there was an error.
+     */
     private String sendSQL(String query) {
         try (Socket socket = new Socket("127.0.0.1", 4446);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -169,8 +223,14 @@ public class AbilityManager extends JFrame {
         }
     }
 
+    /**
+     * Main method to launch the AbilityManager UI.
+     *
+     * @param args Command line arguments (unused).
+     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new AbilityManager().setVisible(true));
     }
 }
+
 
