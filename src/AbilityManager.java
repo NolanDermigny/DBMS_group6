@@ -83,7 +83,7 @@ public class AbilityManager extends JFrame {
             String[] lines = response.trim().split("\\n");
             if (lines.length > 1) {
                 for (int i = 1; i < lines.length; i++) {
-                    String[] parts = lines[i].split(",\\s");
+                    String[] parts = lines[i].split("\t");
                     if (parts.length <= 6) {
                         abilities.add(parts);
                         abilityListModel.addElement(parts[0]); // Name
