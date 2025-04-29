@@ -145,7 +145,7 @@ private Component viewDBLocations() {
   for (String loc : locations) {
     String[] parts = loc.split(", ");
     String locId = parts[0];
-    String desc = parts[1];
+    String desc = (parts.length > 1) ? parts[1] : "Unknown"; // <-- safeguard
 
     JButton button = createButton("[" + locId + "] " + desc);
     button.addActionListener(e -> showLocationDetails(locId));
