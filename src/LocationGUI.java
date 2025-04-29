@@ -9,6 +9,16 @@ import java.net.Socket;
 import java.util.ArrayList;
 
 /**
+ * LocationGUI.java
+ *
+ * This class creates a GUI for managing locations in a game.
+ * It allows users to view, edit, and add locations.
+ *
+ * @author Kevin Pickelman
+ * @group 6 -- Carlie Cann, Amanda DiFalco, Nolan Dermigny, and Kevin Pickelman
+ */
+
+/**
  * LocationGUI provides a GUI interface to view, edit, add, and remove locations
  * by interacting with a backend database through sockets.
  */

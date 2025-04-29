@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * AbilityManager.java
+ * @author Carlie Cann
+ */
+
+/**
  * AbilityManager provides a GUI for viewing, adding, editing, and removing
  * abilities stored in a database, communicating with a server over sockets.
  */
